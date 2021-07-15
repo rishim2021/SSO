@@ -30,24 +30,48 @@ router.get('/',async(req,res)=>{
 
 router.post('/callback',async(req,res,next)=>{
     console.log("running")
+    
     passport.authenticate('saml',(err,user,info)=>{
         if(err) return next(err);
-        if(!user) return res.status(400).redirect('/login')
-        return res.status(200).redirect('/login/home');
+        if(!user){
+            console.log("not authenticate")
+            return res.status(404).redirect('/login')
+        }
+        // console.log(user)
+        req.logIn(user,(err)=>{
+            if(err) return next(err);
+            if(user){
+                console.log("authenticate")
+                return  res.status(200).redirect('/login/home')
+            }
+        }) 
+
     })(req,res,next);
 })
 
 
 router.get('/home',auth,async(req,res)=>{
-    
-    res.status(200).render('home')
+    console.log("Okkk")
+    let userData = req.session.passport.user;
+    // console.log(req.session.passport.user)
+    res.status(200).render('home',{ userData : userData })
 })
 
 
+router.get('/test',async(req,res)=>{
+    res.status(200).render('test')
+})
+
+
+
+
 router.get('/logout',async(req,res)=>{
-    res.clearCookie('connect.sid')
-    res.clearCookie('token')
-    res.status(200).redirect('/login')
+    req.session.destroy((err)=>{
+        if(err) throw err;
+        req.logout()
+        res.clearCookie('connect.sid')
+        res.redirect('/login')
+    })
 
 })
 
